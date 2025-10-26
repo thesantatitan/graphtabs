@@ -51,23 +51,25 @@ function wireTabListeners() {
 
   chrome.tabs.onCreated.addListener((tab) => {
     if (!isValidTab(tab)) return;
-    graphState.tabs.set(tab.id, tab);
+    const merged = storeTabSnapshot(tab.id, tab);
+    if (!merged) return;
     scheduleGraphBroadcast();
-    if (tab.active) {
-      scheduleThumbnailCapture(tab.id, tab.windowId, 'created-active');
+    if (merged.active) {
+      scheduleThumbnailCapture(merged.id, merged.windowId, 'created-active');
     }
   });
 
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    const base = tab ?? graphState.tabs.get(tabId);
-    if (!base || !isValidTab(base)) return;
-
-    const next = tab ?? { ...base, ...changeInfo };
-    graphState.tabs.set(tabId, next);
+    if (!tab && !graphState.tabs.has(tabId)) {
+      return;
+    }
+    // Preserve openerTabId and other snapshot fields when updates omit them.
+    const merged = storeTabSnapshot(tabId, { ...(tab ?? {}), ...changeInfo });
+    if (!merged) return;
     scheduleGraphBroadcast();
 
-    if (next.active && changeInfo.status === 'complete') {
-      scheduleThumbnailCapture(tabId, next.windowId, 'updated-complete');
+    if (merged.active && changeInfo.status === 'complete') {
+      scheduleThumbnailCapture(tabId, merged.windowId, 'updated-complete');
     }
   });
 
@@ -75,7 +77,7 @@ function wireTabListeners() {
     try {
       const tab = await chrome.tabs.get(tabId);
       if (!isValidTab(tab)) return;
-      graphState.tabs.set(tab.id, tab);
+  storeTabSnapshot(tab.id, tab);
       scheduleGraphBroadcast();
       scheduleThumbnailCapture(tab.id, tab.windowId, 'activated');
     } catch (error) {
@@ -93,7 +95,7 @@ function wireTabListeners() {
     try {
       const tab = await chrome.tabs.get(tabId);
       if (!isValidTab(tab)) return;
-      graphState.tabs.set(tabId, tab);
+      storeTabSnapshot(tabId, tab);
       scheduleGraphBroadcast();
     } catch (error) {
       console.warn('onAttached get failed', error);
@@ -109,7 +111,7 @@ function wireTabListeners() {
     try {
       const tab = await chrome.tabs.get(tabId);
       if (!isValidTab(tab)) return;
-      graphState.tabs.set(tabId, tab);
+      storeTabSnapshot(tabId, tab);
       scheduleGraphBroadcast();
     } catch (error) {
       console.warn('onMoved get failed', error);
@@ -122,7 +124,7 @@ function wireTabListeners() {
     try {
   const tab = await chrome.tabs.get(addedTabId);
   if (!isValidTab(tab)) return;
-  graphState.tabs.set(addedTabId, tab);
+  storeTabSnapshot(addedTabId, tab);
       scheduleGraphBroadcast();
       if (tab.active) {
         scheduleThumbnailCapture(tab.id, tab.windowId, 'replaced-active');
@@ -226,7 +228,7 @@ async function refreshAllTabs() {
   graphState.tabs.clear();
   for (const tab of tabs) {
     if (!isValidTab(tab)) continue;
-    graphState.tabs.set(tab.id, tab);
+    storeTabSnapshot(tab.id, tab);
   }
   scheduleGraphBroadcast();
 }
@@ -286,6 +288,37 @@ function isUiTab(tab) {
   const url = typeof tab.pendingUrl === 'string' ? tab.pendingUrl : tab.url;
   if (typeof url !== 'string') return false;
   return url.startsWith(UI_PAGE_URL);
+}
+
+function storeTabSnapshot(tabId, updates) {
+  const merged = mergeTabSnapshot(tabId, updates);
+  if (!merged) return null;
+  graphState.tabs.set(tabId, merged);
+  return merged;
+}
+
+function mergeTabSnapshot(tabId, updates) {
+  if (!Number.isFinite(tabId)) return null;
+
+  const previous = graphState.tabs.get(tabId);
+  const partial = updates && typeof updates === 'object' ? updates : {};
+
+  const merged = {
+    ...(previous ?? {}),
+    ...partial,
+    id: tabId,
+  };
+
+  if (previous && typeof previous.openerTabId === 'number') {
+    const provided = partial.openerTabId;
+    if (typeof provided !== 'number') {
+      merged.openerTabId = previous.openerTabId;
+    }
+  }
+
+  if (!isValidTab(merged)) return null;
+
+  return merged;
 }
 
 function scheduleThumbnailCapture(tabId, windowId, reason) {

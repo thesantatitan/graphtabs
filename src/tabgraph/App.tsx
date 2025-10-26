@@ -277,7 +277,7 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-  onInit={handleFlowInit}
+        onInit={handleFlowInit}
         nodesDraggable
         nodesConnectable={false}
         panOnScroll
