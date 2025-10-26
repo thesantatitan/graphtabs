@@ -12,6 +12,11 @@ export type BrowserWindowNodeData = {
 
 export type BrowserWindowNodeType = Node<BrowserWindowNodeData, 'browserWindow'>;
 
+type TabCloseResponse = {
+  ok: boolean;
+  error?: string;
+};
+
 function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
   const { setNodes } = useReactFlow();
   const activeHandleRef = useRef<HTMLDivElement | null>(null);
@@ -36,9 +41,30 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
   const controlSpacing = Math.min(Math.max(width * 0.04, 6), 16);
 
   const handleCloseClick = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      // Prevent the click from dragging/selecting the node before removing it
+    async (event: MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
+
+      const tabId = Number(id);
+      const extensionAvailable = typeof chrome !== 'undefined' && !!chrome.runtime?.sendMessage;
+
+      if (extensionAvailable && Number.isFinite(tabId)) {
+        try {
+          const response = await chrome.runtime.sendMessage<TabCloseMessage, TabCloseResponse>({
+            type: 'tab:close',
+            tabId,
+          });
+
+          if (response?.ok) {
+            setNodes((nodes) => nodes.filter((node) => node.id !== id));
+          } else if (response && !response.ok) {
+            console.warn('tab:close responded without closing the tab', response.error);
+          }
+        } catch (error) {
+          console.warn('tab:close message failed', error);
+        }
+        return;
+      }
+
       setNodes((nodes) => nodes.filter((node) => node.id !== id));
     },
     [id, setNodes]
