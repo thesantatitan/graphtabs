@@ -1,4 +1,4 @@
-import { memo, useCallback, type MouseEvent } from 'react';
+import { memo, useCallback, useMemo, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Handle, Position, type Node, type NodeProps, useReactFlow } from '@xyflow/react';
 
 export type BrowserWindowNodeData = {
@@ -6,12 +6,30 @@ export type BrowserWindowNodeData = {
   imageSrc?: string;
   imageAlt?: string;
   hideHandles?: boolean;
+  width?: number;
+  height?: number;
 };
 
 export type BrowserWindowNodeType = Node<BrowserWindowNodeData, 'browserWindow'>;
 
 function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
   const { setNodes } = useReactFlow();
+  const activeHandleRef = useRef<HTMLDivElement | null>(null);
+
+  const nodeData = useMemo(() => (data ?? {}) as BrowserWindowNodeData, [data]);
+  const {
+    title = 'Browser Preview',
+    imageSrc,
+    imageAlt = 'Browser node preview',
+    hideHandles,
+    width: dataWidth,
+    height: dataHeight,
+  } = nodeData;
+
+  const width = Math.max(dataWidth ?? 260, 200);
+  const height = Math.max(dataHeight ?? 210, 150);
+  const headerHeight = 18;
+  const previewHeight = Math.max(height - headerHeight, 90);
 
   const handleCloseClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -22,13 +40,74 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
     [id, setNodes]
   );
 
-  const nodeData = (data ?? {}) as BrowserWindowNodeData;
-  const { title = 'Browser Preview', imageSrc, imageAlt = 'Browser node preview', hideHandles } = nodeData;
+  const handleResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const initialPointer = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: width,
+        startHeight: height,
+      };
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const deltaX = moveEvent.clientX - initialPointer.startX;
+        const deltaY = moveEvent.clientY - initialPointer.startY;
+        const nextWidth = Math.max(initialPointer.startWidth + deltaX, 200);
+        const nextHeight = Math.max(initialPointer.startHeight + deltaY, 150);
+
+        setNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === id
+              ? {
+                  ...node,
+                  data: {
+                    ...(node.data ?? {}),
+                    width: nextWidth,
+                    height: nextHeight,
+                  },
+                }
+              : node
+          )
+        );
+      };
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        if (upEvent.pointerId !== initialPointer.pointerId) {
+          return;
+        }
+
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+
+        if (activeHandleRef.current && activeHandleRef.current.hasPointerCapture(initialPointer.pointerId)) {
+          activeHandleRef.current.releasePointerCapture(initialPointer.pointerId);
+        }
+
+        activeHandleRef.current = null;
+      };
+
+      const handleElement = event.currentTarget;
+      activeHandleRef.current = handleElement;
+      handleElement.setPointerCapture?.(event.pointerId);
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp, { once: false });
+      window.addEventListener('pointercancel', onPointerUp, { once: false });
+    },
+    [height, id, setNodes, width]
+  );
 
   return (
     <div
       style={{
-        width: 260,
+        width,
+        height,
+        position: 'relative',
         borderRadius: 12,
         border: '1px solid #d0d5dd',
         boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
@@ -49,9 +128,10 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0.5rem 0.75rem',
+          padding: '0.3rem 0.65rem',
           background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
           borderBottom: '1px solid #d0d5dd',
+          minHeight: headerHeight,
         }}
       >
         <div
@@ -69,9 +149,12 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           style={{
             flex: 1,
             textAlign: 'center',
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 500,
             color: '#475569',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
           {title}
@@ -80,11 +163,11 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           onClick={handleCloseClick}
           aria-label="Close browser preview"
           style={{
-            background: '#f1f5f9',
+            background: '#f8fafc',
             border: '1px solid #cbd5f5',
             borderRadius: 6,
-            width: 24,
-            height: 24,
+            width: 22,
+            height: 22,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -99,7 +182,7 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
       <div
         style={{
           width: '100%',
-          height: 160,
+          height: previewHeight,
           background: '#f8fafc',
           position: 'relative',
         }}
@@ -132,6 +215,23 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           </div>
         )}
       </div>
+
+      <div
+        onPointerDown={handleResizePointerDown}
+        style={{
+          position: 'absolute',
+          right: 6,
+          bottom: 6,
+          width: 16,
+          height: 16,
+          borderRight: '2px solid rgba(148, 163, 184, 0.8)',
+          borderBottom: '2px solid rgba(148, 163, 184, 0.8)',
+          cursor: 'nwse-resize',
+          background: 'transparent',
+        }}
+        role="presentation"
+        aria-hidden="true"
+      />
     </div>
   );
 }
