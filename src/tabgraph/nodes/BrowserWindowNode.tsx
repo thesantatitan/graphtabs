@@ -16,9 +16,9 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
   const { setNodes } = useReactFlow();
   const activeHandleRef = useRef<HTMLDivElement | null>(null);
 
-  const MIN_WIDTH = 80;
-  const MIN_HEIGHT = 80;
-  const MIN_PREVIEW_HEIGHT = 60;
+  const MIN_WIDTH = 160;
+  const MIN_HEIGHT = 150;
+  const MIN_PREVIEW_HEIGHT = 120;
   const nodeData = useMemo(() => (data ?? {}) as BrowserWindowNodeData, [data]);
   const {
     title = 'Browser Preview',
@@ -31,9 +31,9 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
 
   const width = Math.max(dataWidth ?? 260, MIN_WIDTH);
   const height = Math.max(dataHeight ?? 210, MIN_HEIGHT);
-  const headerHeight = 12;
+  const headerHeight = 30;
   const previewHeight = Math.max(height - headerHeight, MIN_PREVIEW_HEIGHT);
-  const controlSpacing = Math.min(Math.max(width * 0.04, 4), 12);
+  const controlSpacing = Math.min(Math.max(width * 0.04, 6), 16);
 
   const handleCloseClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -116,8 +116,9 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
         border: '1px solid #d0d5dd',
         boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
         background: '#ffffff',
-        overflow: 'hidden',
-        fontFamily: 'Inter, system-ui, sans-serif',
+  overflow: 'hidden',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  fontSize: 14,
       }}
     >
       {!hideHandles && (
@@ -132,7 +133,7 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0.3rem 0.65rem',
+          padding: '0.45rem 0.85rem',
           background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
           borderBottom: '1px solid #d0d5dd',
           minHeight: headerHeight,
@@ -145,17 +146,17 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
             gap: controlSpacing,
           }}
         >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#facc15', display: 'inline-block' }} />
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#facc15', display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
         </div>
         <div
           style={{
             flex: 1,
             textAlign: 'center',
-            fontSize: 6,
+            fontSize: 20,
             fontWeight: 500,
-            color: '#475569',
+            color: '#334155',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -167,16 +168,18 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
           onClick={handleCloseClick}
           aria-label="Close browser preview"
           style={{
-            background: '#f8fafc',
+            background: '#e2e8f0',
             border: '1px solid #cbd5f5',
-            borderRadius: 3,
-            width: 10,
-            height: 10,
+            borderRadius: 4,
+            width: 16,
+            height: 16,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#475569',
+            color: '#334155',
             cursor: 'pointer',
+            fontSize: 12,
+            lineHeight: 1,
           }}
         >
           ×
@@ -211,7 +214,7 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
               alignItems: 'center',
               justifyContent: 'center',
               color: '#94a3b8',
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: 500,
             }}
           >

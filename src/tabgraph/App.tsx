@@ -16,8 +16,8 @@ import type { TabGraph } from '../shared/types';
 
 type ThumbnailMap = Map<number, string | null>;
 
-const DEFAULT_NODE_WIDTH = 260;
-const DEFAULT_NODE_HEIGHT = 210;
+const DEFAULT_NODE_WIDTH = 360;
+const DEFAULT_NODE_HEIGHT = 260;
 
 const DAGRE_CONFIG = {
   rankdir: 'LR',
