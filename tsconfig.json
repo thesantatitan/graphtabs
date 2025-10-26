@@ -11,5 +11,5 @@
     "noEmit": true,
     "types": ["chrome"]
   },
-  "include": ["src", "manifest.json", "ui", "shared", "background"]
+  "include": ["src", "manifest.json"]
 }

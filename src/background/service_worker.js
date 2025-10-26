@@ -1,6 +1,6 @@
 'use strict';
 
-const UI_PAGE_PATH = 'ui/tabgraph.html';
+const UI_PAGE_PATH = 'src/tabgraph/index.html';
 const GRAPH_BROADCAST_DELAY_MS = 75;
 const CAPTURE_DEBOUNCE_MS = 200;
 const THUMB_TARGET_WIDTH = 160;
