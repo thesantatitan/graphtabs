@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import {
   ReactFlow,
   Background,
@@ -15,6 +15,11 @@ import '@xyflow/react/dist/style.css';
 import type { TabGraph } from '../shared/types';
 
 type ThumbnailMap = Map<number, string | null>;
+
+type TabActivateResponse = {
+  ok: boolean;
+  error?: string;
+};
 
 const DEFAULT_NODE_WIDTH = 360;
 const DEFAULT_NODE_HEIGHT = 260;
@@ -269,6 +274,26 @@ export default function App() {
     []
   );
 
+  const handleNodeClick = useCallback(
+    (_event: MouseEvent, node: BrowserWindowNodeType) => {
+      if (!EXTENSION_AVAILABLE) {
+        return;
+      }
+
+      const tabId = Number(node.id);
+      if (!Number.isFinite(tabId)) {
+        return;
+      }
+
+      chrome.runtime
+        .sendMessage<TabActivateMessage, TabActivateResponse>({ type: 'tab:activate', tabId })
+        .catch((error) => {
+          console.warn('tab:activate message failed', error);
+        });
+    },
+    []
+  );
+
   return (
     <div style={{ height: '98vh', width: '98vw' }}>
       <ReactFlow<BrowserWindowNodeType, Edge>
@@ -278,6 +303,7 @@ export default function App() {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         onInit={handleFlowInit}
+  onNodeClick={handleNodeClick}
         nodesDraggable
         nodesConnectable={false}
         panOnScroll
