@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "GraphTabs",
+  "description": "Visualize open tabs with live thumbnails; host permissions enable local captures.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "GraphTabs"
+  },
+  "background": {
+    "service_worker": "background/service_worker.js"
+  },
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["<all_urls>"]
+}
