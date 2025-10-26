@@ -9,6 +9,7 @@ const THUMB_JPEG_QUALITY = 0.95;
 const THUMB_MAX_TOTAL_BYTES = 16 * 1024 * 1024;
 const THUMB_MAX_ENTRIES = 120;
 const THUMB_STORAGE_PREFIX = 'thumb_';
+const UI_PAGE_URL = chrome.runtime.getURL(UI_PAGE_PATH);
 
 /** @typedef {{ id: number, title: string, url: string, windowId: number, openerTabId: number | null, active: boolean }} TabNode */
 /** @typedef {{ from: number, to: number }} TabEdge */
@@ -119,9 +120,9 @@ function wireTabListeners() {
     graphState.tabs.delete(removedTabId);
     await removeThumbnail(removedTabId).catch((error) => console.warn('removeThumbnail on replace failed', error));
     try {
-      const tab = await chrome.tabs.get(addedTabId);
-      if (!isValidTab(tab)) return;
-      graphState.tabs.set(addedTabId, tab);
+  const tab = await chrome.tabs.get(addedTabId);
+  if (!isValidTab(tab)) return;
+  graphState.tabs.set(addedTabId, tab);
       scheduleGraphBroadcast();
       if (tab.active) {
         scheduleThumbnailCapture(tab.id, tab.windowId, 'replaced-active');
@@ -277,7 +278,14 @@ function scheduleGraphBroadcast() {
 }
 
 function isValidTab(tab) {
-  return Boolean(tab && typeof tab.id === 'number' && tab.id >= 0);
+  return Boolean(tab && typeof tab.id === 'number' && tab.id >= 0 && !isUiTab(tab));
+}
+
+function isUiTab(tab) {
+  if (!tab) return false;
+  const url = typeof tab.pendingUrl === 'string' ? tab.pendingUrl : tab.url;
+  if (typeof url !== 'string') return false;
+  return url.startsWith(UI_PAGE_URL);
 }
 
 function scheduleThumbnailCapture(tabId, windowId, reason) {
