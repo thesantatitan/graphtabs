@@ -208,18 +208,35 @@ function wireRuntimeListeners() {
     }
   });
 
-  chrome.action.onClicked.addListener(async () => {
-    const url = chrome.runtime.getURL(UI_PAGE_PATH);
-    const existing = await chrome.tabs.query({ url });
-    if (existing.length > 0) {
-      const tab = existing[0];
-      await chrome.tabs.update(tab.id, { active: true });
-      if (typeof tab.windowId === 'number') {
-        await chrome.windows.update(tab.windowId, { focused: true });
+  chrome.action.onClicked.addListener(async (tab) => {
+    const windowId = tab.windowId;
+    
+    // Check if side panel is already open for this window
+    try {
+      // Get the current side panel state
+      const panels = await chrome.sidePanel.getOptions({ windowId });
+      
+      // If the panel is enabled, we want to close it by setting it to disabled
+      // If it's disabled or not set, we want to open it
+      if (panels && panels.enabled !== false) {
+        // Close the side panel by disabling it for this window
+        await chrome.sidePanel.setOptions({
+          windowId,
+          enabled: false
+        });
+      } else {
+        // Open the side panel
+        await chrome.sidePanel.setOptions({
+          windowId,
+          enabled: true
+        });
+        await chrome.sidePanel.open({ windowId });
       }
-      return;
+    } catch (error) {
+      // If there's an error checking state, just try to open it
+      console.debug('Side panel toggle error, attempting to open:', error);
+      await chrome.sidePanel.open({ windowId });
     }
-    await chrome.tabs.create({ url });
   });
 }
 

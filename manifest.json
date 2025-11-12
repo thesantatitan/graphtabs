@@ -6,6 +6,9 @@
   "action": {
     "default_title": "GraphTabs"
   },
+  "side_panel": {
+    "default_path": "src/tabgraph/index.html"
+  },
   "background": {
     "service_worker": "src/background/service_worker.js",
     "type": "module"
@@ -16,6 +19,6 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "sidePanel"],
   "host_permissions": ["<all_urls>"]
 }
