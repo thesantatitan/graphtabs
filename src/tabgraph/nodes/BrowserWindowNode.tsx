@@ -167,17 +167,6 @@ function BrowserWindowNode({ id, data }: NodeProps<BrowserWindowNodeType>) {
       >
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: controlSpacing,
-          }}
-        >
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#facc15', display: 'inline-block' }} />
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-        </div>
-        <div
-          style={{
             flex: 1,
             textAlign: 'center',
             fontSize: 20,
